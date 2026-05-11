@@ -3,21 +3,16 @@ import { DentalSoftService } from '../dentalsoft/dentalsoft.service';
 const REPORT_HASH    = 'web/index.php/sam/informes/membresias';
 const EXCEL_SELECTOR = "xpath=//span[contains(text(),'Excel')]/.. | //button[contains(.,'Excel')] | //a[contains(.,'Excel')]";
 
-function trimestresAnioActual(): Array<{ desde: string; hasta: string; label: string }> {
-  const a = new Date().getFullYear();
-  return [
-    { desde: `01/01/${a}`, hasta: `31/03/${a}`, label: 'Q1' },
-    { desde: `01/04/${a}`, hasta: `30/06/${a}`, label: 'Q2' },
-    { desde: `01/07/${a}`, hasta: `30/09/${a}`, label: 'Q3' },
-    { desde: `01/10/${a}`, hasta: `31/12/${a}`, label: 'Q4' },
-  ];
+function rangoAnioActual(): { desde: string; hasta: string } {
+  const anio  = new Date().getFullYear();
+  const desde = `01/01/${anio}`;
+  const hasta = `31/12/${anio}`;
+  return { desde, hasta };
 }
 
-async function setearFiltrosFecha(
-  page: ReturnType<DentalSoftService['getPage']>,
-  desde: string,
-  hasta: string,
-): Promise<void> {
+async function setearFiltrosFecha(page: ReturnType<DentalSoftService['getPage']>): Promise<void> {
+  const { desde, hasta } = rangoAnioActual();
+
   const SELECTORES_DESDE = [
     'input[name="fecha_inicio"]', 'input[name="FechaInicio"]', 'input[name="fechaInicio"]',
     'input[name="fecha_desde"]',  'input[name="fechaDesde"]',  'input[name="start_date"]',
@@ -64,8 +59,8 @@ async function setearFiltrosFecha(
   }
 }
 
-export async function descargarSam(): Promise<string[]> {
-  console.log('[sam] Iniciando descarga trimestral desde DentalSoft...');
+export async function descargarSam(): Promise<string> {
+  console.log('[sam] Iniciando descarga desde DentalSoft...');
 
   const ds = new DentalSoftService();
   await ds.init();
@@ -83,47 +78,48 @@ export async function descargarSam(): Promise<string[]> {
     if (page.url().includes('login')) {
       console.log('[sam] Sesión perdida post-navegación, re-autenticando...');
       await ds.login();
+      console.log('[sam] Re-auth OK — navegando por hash...');
       await page.evaluate((h) => { window.location.hash = h; }, REPORT_HASH);
       await page.waitForLoadState('networkidle').catch(() => {});
+      console.log(`[sam] URL post-hash: ${page.url()}`);
     }
 
     console.log("[sam] Esperando botón 'Generar'...");
     await page.waitForSelector("button:has-text('Generar')", { timeout: 60000 })
       .catch(() => null);
+
     console.log('[sam] Página de membresías cargada');
 
-    const trimestres = trimestresAnioActual();
-    const archivos: string[] = [];
+    await setearFiltrosFecha(page);
 
-    for (const { desde, hasta, label } of trimestres) {
-      console.log(`\n[sam] ── Trimestre ${label}: ${desde} → ${hasta}`);
+    const tieneGenerar = await page.$("button:has-text('Generar')")
+      .then(el => !!el)
+      .catch(() => false);
 
-      await setearFiltrosFecha(page, desde, hasta);
+    console.log(`[sam] Botón Generar encontrado: ${tieneGenerar}`);
+    console.log(`[sam] URL actual: ${page.url()}`);
 
-      const tieneGenerar = await page.$("button:has-text('Generar')")
-        .then(el => !!el).catch(() => false);
-
-      if (!tieneGenerar) {
-        console.log(`[sam] ⚠ Botón Generar no encontrado en ${label}, saltando...`);
-        continue;
-      }
-
-      console.log(`[sam] Haciendo clic en Generar (${label})...`);
-      await ds.clickGenerar();
-      console.log(`[sam] Esperando botón Excel ${label} (hasta 5 min)...`);
-      await page.waitForSelector(EXCEL_SELECTOR, { timeout: 300000 });
-      console.log(`[sam] Botón Excel visible — descargando ${label}...`);
-
-      const filePath = await ds.downloadFile(async () => {
-        await page.locator(EXCEL_SELECTOR).first().click({ noWaitAfter: true });
-      }, 300000);
-
-      console.log(`[sam] Descarga ${label} OK → ${filePath}`);
-      archivos.push(filePath);
+    if (!tieneGenerar) {
+      const shot = await page.screenshot({ fullPage: true }).catch(() => null);
+      if (shot) console.log(`[sam] SCREENSHOT: data:image/png;base64,${shot.toString('base64')}`);
     }
 
-    console.log(`\n[sam] Descarga trimestral completa — ${archivos.length} archivos`);
-    return archivos;
+    if (tieneGenerar) {
+      console.log('[sam] Haciendo clic en Generar...');
+      await ds.clickGenerar();
+      console.log('[sam] Clic en Generar ejecutado — esperando tabla...');
+    }
+
+    console.log('[sam] Esperando botón Excel (hasta 5 min)...');
+    await page.waitForSelector(EXCEL_SELECTOR, { timeout: 300000 });
+    console.log('[sam] Botón Excel visible — iniciando descarga...');
+
+    const filePath = await ds.downloadFile(async () => {
+      await page.locator(EXCEL_SELECTOR).first().click({ noWaitAfter: true });
+    }, 300000);
+
+    console.log(`[sam] Descarga OK → ${filePath}`);
+    return filePath;
 
   } finally {
     await ds.close();

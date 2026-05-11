@@ -10,8 +10,8 @@ async function main() {
   await notificar({ evento: 'inicio', mensaje: 'Proceso SAM iniciado' });
 
   try {
-    const archivos = await descargarSam();
-    const stats    = await cargarSam(archivos);
+    const archivo = await descargarSam();
+    const stats   = await cargarSam(archivo);
 
     console.log(`[sam] Registros en BD: ${stats.en_bd}`);
     console.log('══ SAM OK ═════════════════════════════════════════════════\n');
