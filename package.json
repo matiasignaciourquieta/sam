@@ -8,7 +8,8 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
-    "sam": "ts-node src/index.ts"
+    "sam": "ts-node src/index.ts",
+    "postinstall": "npx playwright install --with-deps chromium"
   },
   "dependencies": {
     "@types/nodemailer": "^8.0.0",
