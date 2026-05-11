@@ -26,6 +26,8 @@ export class DentalSoftService {
         '--disable-gpu',
         '--disable-software-rasterizer',
         '--disable-gpu-sandbox',
+        '--no-zygote',
+        '--single-process',
       ],
     });
     this.context = await this.browser.newContext({ acceptDownloads: true });
