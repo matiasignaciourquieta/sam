@@ -27,7 +27,9 @@ export class DentalSoftService {
         '--disable-software-rasterizer',
         '--disable-gpu-sandbox',
         '--no-zygote',
-        '--single-process',
+        '--disable-features=VizDisplayCompositor',
+        '--disable-accelerated-2d-canvas',
+        '--disable-webgl',
       ],
     });
     this.context = await this.browser.newContext({ acceptDownloads: true });
