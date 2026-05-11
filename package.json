@@ -1,0 +1,28 @@
+{
+  "name": "unionsalud-sam",
+  "version": "1.0.0",
+  "description": "Descarga automática SAM desde DentalSoft y carga a PostgreSQL Railway",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "sam": "ts-node src/index.ts"
+  },
+  "dependencies": {
+    "@types/nodemailer": "^8.0.0",
+    "csv-parse": "^5.5.6",
+    "dotenv": "^16.4.5",
+    "nodemailer": "^8.0.5",
+    "pg": "^8.12.0",
+    "playwright": "^1.49.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "@types/pg": "^8.11.6",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.4"
+  }
+}
