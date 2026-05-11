@@ -219,20 +219,29 @@ export interface StatsSam {
   en_bd: number;
 }
 
-export async function cargarSam(filePath: string): Promise<StatsSam> {
-  console.log('[sam] Parseando archivo...');
-  const filas = parsearArchivo(filePath);
-  const registros = filas.map(mapearFila).filter(r => r.rut_beneficiario !== '');
+export async function cargarSam(filePaths: string[]): Promise<StatsSam> {
+  console.log(`[sam] Parseando ${filePaths.length} archivo(s)...`);
 
-  console.log(`[sam] ${registros.length} registros válidos de ${filas.length} filas`);
+  const registros: BeneficiarioSam[] = [];
+  let totalFilas = 0;
 
-  if (filas.length > 0) {
-    const headers = Object.keys(filas[0]);
-    const mapeados  = headers.filter(h => HEADER_MAP[normalizarHeader(h)]);
-    const sinMapear = headers.filter(h => !HEADER_MAP[normalizarHeader(h)]);
-    console.log(`[sam] Columnas mapeadas: ${mapeados.length}/${headers.length}`);
-    if (sinMapear.length > 0) console.log(`[sam] Sin mapear: ${sinMapear.join(', ')}`);
+  for (const filePath of filePaths) {
+    const filas = parsearArchivo(filePath);
+    totalFilas += filas.length;
+    const regs = filas.map(mapearFila).filter(r => r.rut_beneficiario !== '');
+    console.log(`[sam] ${path.basename(filePath)}: ${regs.length} registros válidos de ${filas.length} filas`);
+
+    if (filas.length > 0) {
+      const headers   = Object.keys(filas[0]);
+      const sinMapear = headers.filter(h => !HEADER_MAP[normalizarHeader(h)]);
+      if (sinMapear.length > 0) console.log(`[sam] Sin mapear: ${sinMapear.join(', ')}`);
+    }
+
+    registros.push(...regs);
+    fs.unlinkSync(filePath);
   }
+
+  console.log(`[sam] Total: ${registros.length} registros válidos de ${totalFilas} filas`);
 
   if (registros.length === 0) {
     console.log('[sam] Sin datos para cargar.');
@@ -318,6 +327,5 @@ export async function cargarSam(filePath: string): Promise<StatsSam> {
     throw err;
   } finally {
     client.release();
-    fs.unlinkSync(filePath);
   }
 }
