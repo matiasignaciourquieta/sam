@@ -2,7 +2,7 @@ FROM mcr.microsoft.com/playwright:v1.49.0-jammy
 
 WORKDIR /app
 
-# Browsers already bundled in base image — skip re-download
+# Only install Firefox — no /dev/shm dependency unlike Chromium
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
 COPY package*.json ./

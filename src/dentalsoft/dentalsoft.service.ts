@@ -1,4 +1,4 @@
-import { chromium, Browser, BrowserContext, Page } from 'playwright';
+import { firefox, Browser, BrowserContext, Page } from 'playwright';
 import * as path from 'path';
 import * as os from 'os';
 
@@ -16,22 +16,8 @@ export class DentalSoftService {
 
   async init(): Promise<void> {
     const headless = process.env.PLAYWRIGHT_HEADLESS !== 'false';
-    console.log(`[dentalsoft] Lanzando Chromium (headless=${headless})...`);
-    this.browser = await chromium.launch({
-      headless,
-      args: [
-        '--disable-dev-shm-usage',
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-gpu',
-        '--disable-software-rasterizer',
-        '--disable-gpu-sandbox',
-        '--no-zygote',
-        '--disable-features=VizDisplayCompositor',
-        '--disable-accelerated-2d-canvas',
-        '--disable-webgl',
-      ],
-    });
+    console.log(`[dentalsoft] Lanzando Firefox (headless=${headless})...`);
+    this.browser = await firefox.launch({ headless });
     this.context = await this.browser.newContext({ acceptDownloads: true });
     this.page = await this.context.newPage();
     await this.page.setViewportSize({ width: 1280, height: 720 });
